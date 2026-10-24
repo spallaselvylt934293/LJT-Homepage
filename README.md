@@ -9,8 +9,16 @@ Personal academic website for Junteng Liu, forked from [Academic Pages](https://
 - `_publications/`: the six publication records, also rendered on the homepage from the same source files.
 - `_config.yml` and `_data/navigation.yml`: personal settings and section navigation.
 
-## Build
+The recorded publication years are used without inventing exact publication dates. No portrait or details absent from memory have been supplied.
 
-The site uses Jekyll. The inherited GitHub Actions workflow builds the site for GitHub Pages. The project-site path is `/LJT-Homepage`.
+## Build and publishing
+
+The site uses Jekyll. The GitHub Actions workflow in `.github/workflows/jekyll.yml` builds the site and verifies both publication lists, personal details, contact links, local navigation, and the page inventory.
+
+Project-site path: `/LJT-Homepage`.
+
+GitHub Pages must be enabled by the repository owner under **Settings → Pages → Build and deployment → Source → GitHub Actions**. Automatic activation was rejected by GitHub for the workflow token. Once that setting is enabled, run the deployment workflow again. The build and validation run independently of deployment.
+
+Configured site address after activation: https://spallaselvylt934293.github.io/LJT-Homepage/
 
 Theme attribution and license are retained from Academic Pages.
