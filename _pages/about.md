@@ -41,7 +41,8 @@ My research combines natural language processing and machine learning. My intere
 
 The same publications recorded on the [Publications page]({{ '/publications/' | relative_url }}) are listed here, with author lists and publication venues.
 
-{% for post in site.publications reversed %}
+{% assign sorted_publications = site.publications | sort: "order" %}
+{% for post in sorted_publications %}
 {% include archive-single.html %}
 {% endfor %}
 

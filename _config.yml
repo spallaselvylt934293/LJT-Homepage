@@ -10,7 +10,7 @@ baseurl: "/LJT-Homepage"
 repository: "spallaselvylt934293/LJT-Homepage"
 
 # Personal information recorded in memory. Unknown fields are left unset.
-# No portrait was provided, so the author sidebar omits the template portrait.
+# No portrait was supplied in memory, so the author sidebar omits a portrait.
 author:
   avatar:
   name: *name
@@ -56,7 +56,7 @@ social:
 analytics:
   provider: "false"
 
-# Reading files
+# Reading files: only personal website content is published.
 include:
   - .htaccess
   - _pages
@@ -87,6 +87,14 @@ exclude:
   - README
   - README.md
   - AGENTS.md
+  - files
+  - markdown_generator
+  - scripts
+  - talkmap
+  - talkmap.py
+  - talkmap.ipynb
+  - talkmap_out.ipynb
+  - images/wiki
   - tmp
   - vendor
 keep_files:
@@ -111,7 +119,7 @@ kramdown:
   smart_quotes: lsquo,rsquo,ldquo,rdquo
   enable_coderay: false
 
-# Only the publication collection generates item pages.
+# Only publication records generate item pages.
 # About is the homepage; no additional topic sections are enabled.
 collections:
   publications:
@@ -140,14 +148,12 @@ sass:
 permalink: /:categories/:title/
 timezone: Etc/UTC
 plugins:
-  - jekyll-feed
   - jekyll-gist
   - jekyll-paginate
   - jekyll-sitemap
   - jekyll-redirect-from
   - jemoji
 whitelist:
-  - jekyll-feed
   - jekyll-gist
   - jekyll-paginate
   - jekyll-sitemap
