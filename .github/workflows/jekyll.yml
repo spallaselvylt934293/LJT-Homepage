@@ -37,13 +37,39 @@ jobs:
           bundle exec jekyll build --strict_front_matter --trace --baseurl "${{ steps.pages.outputs.base_path }}"
           python3 - <<'PY'
           from pathlib import Path
-          from html import unescape
-          import re
+          from html.parser import HTMLParser
+
+          class Page(HTMLParser):
+              def __init__(self, source):
+                  super().__init__(convert_charrefs=True)
+                  self.text = []
+                  self.links = []
+                  self.headings = []
+                  self.heading = None
+                  self.feed(source)
+
+              def handle_starttag(self, tag, attrs):
+                  if tag == 'h2':
+                      self.heading = []
+                  attrs = dict(attrs)
+                  for key in ('href', 'src'):
+                      if attrs.get(key):
+                          self.links.append(attrs[key])
+
+              def handle_endtag(self, tag):
+                  if tag == 'h2' and self.heading is not None:
+                      self.headings.append(''.join(self.heading).strip())
+                      self.heading = None
+
+              def handle_data(self, data):
+                  self.text.append(data)
+                  if self.heading is not None:
+                      self.heading.append(data)
 
           site = Path('_site')
           base = '/LJT-Homepage'
-          home = (site / 'index.html').read_text()
-          publications_page = (site / 'publications/index.html').read_text()
+          home = Page((site / 'index.html').read_text())
+          publications_page = Page((site / 'publications/index.html').read_text())
           records = [
               ('synlogic', 'SynLogic: Synthesizing Verifiable Reasoning Data at Scale for Learning Logical Reasoning and Beyond', '2025', 'Arxiv', 'Junteng Liu, Yuanxiang Fan, Zhuo Jiang, Han Ding, Yongyi Hu, Chi Zhang, Yiqi Shi, Shitong Weng, Aili Chen, Shiqi Chen, Yunan Huang, Mozhi Zhang, Pengyu Zhao, Junjie Yan, Junxian He.'),
               ('chart-understanding', 'On the Perception Bottleneck of VLMs for Chart Understanding', '2025', 'Arxiv', 'Junteng Liu, Weihao Zeng, Xiwen Zhang, Yijun Wang, Zifei Shan, Junxian He.'),
@@ -52,32 +78,35 @@ jobs:
               ('c-eval', 'C-Eval: A Multi-Level Multi-Discipline Chinese Evaluation Suite for Foundation Models', '2023', 'NeurIPS 2023', 'Yuzhen Huang, Yuzhuo Bai, Zhihao Zhu, Junlei Zhang, Jinghan Zhang, Tangjun Su, Junteng Liu, Chuancheng Lv, Yikai Zhang, Jiayi Lei, Yao Fu, Maosong Sun, Junxian He.'),
               ('parameter-efficient-modules', 'Composing Parameter-Efficient Modules with Arithmetic Operations', '2023', 'NeurIPS 2023', 'Jinghan Zhang, Shiqi Chen, Junteng Liu, Junxian He.'),
           ]
-          for name in ['About Me', 'Education', 'Skills and Research Interests', 'Research Experience', 'Honors', 'Publications', 'Contact']:
-              assert f'>{name}</h2>' in home, name
-          for value in ['Ph.D. in Computer Science', 'B.Eng.', '2020–2024', 'June 2024', 'Professor Junxian He', 'MINIMAX', 'February 2025–Present', 'Tencent WXG', 'June 2024–September 2024', 'Zifei Shan', 'Shanghai AI Lab', 'June 2023–December 2023', 'Prof. Yu Cheng', 'Zhiyuan Honor Scholarship', 'jliugi@connect.ust.hk', 'https://github.com/Vicent0205', 'https://twitter.com/junteng88716710', 'https://scholar.google.com/citations?hl=en&amp;user=tbK9jl4AAAAJ&amp;view_op=list_works&amp;sortby=pubdate']:
-              assert value in home, value
+          sections = ['About Me', 'Education', 'Skills and Research Interests', 'Research Experience', 'Honors', 'Publications', 'Contact']
+          assert home.headings == sections[:6] + [record[1] for record in records] + sections[6:], home.headings
+          home_text = ''.join(home.text)
+          for value in ['Ph.D. in Computer Science', 'B.Eng.', '2020–2024', 'June 2024', 'Professor Junxian He', 'MINIMAX', 'February 2025–Present', 'Tencent WXG', 'June 2024–September 2024', 'Zifei Shan', 'Shanghai AI Lab', 'June 2023–December 2023', 'Prof. Yu Cheng', 'Zhiyuan Honor Scholarship', 'jliugi@connect.ust.hk']:
+              assert value in home_text, value
+          for value in ['mailto:jliugi@connect.ust.hk', 'https://github.com/Vicent0205', 'https://twitter.com/junteng88716710', 'https://scholar.google.com/citations?hl=en&user=tbK9jl4AAAAJ&view_op=list_works&sortby=pubdate']:
+              assert value in home.links, value
           for slug, title, year, venue, authors in records:
               detail_path = f'publications/{slug}/index.html'
-              detail = (site / detail_path).read_text()
+              detail = Page((site / detail_path).read_text())
               for page in [home, publications_page, detail]:
-                  text = re.sub(r'<[^>]+>', '', unescape(page))
+                  text = ''.join(page.text)
                   assert title in text, title
                   assert authors in text, (slug, 'authors')
                   assert venue in text, (slug, 'venue')
                   assert f', {year}' in text, (slug, 'year')
-              link = f'href="{base}/publications/{slug}/"'
-              assert home.count(link) == 1, (slug, 'homepage link')
-              assert publications_page.count(link) == 1, (slug, 'publications link')
+              link = f'{base}/publications/{slug}/'
+              assert home.links.count(link) == 1, (slug, 'homepage link')
+              assert publications_page.links.count(link) == 1, (slug, 'publications link')
           for placeholder in ['Your Name', 'Your Sidebar Name', 'Red Brick University', 'none@example.org', 'Paper Title Number', 'Stuart Geiger']:
-              assert placeholder not in home, placeholder
-              assert placeholder not in publications_page, placeholder
+              assert placeholder not in home_text, placeholder
+              assert placeholder not in ''.join(publications_page.text), placeholder
           allowed = {'index.html', 'about/index.html', 'about.html', '404.html', 'publications/index.html'}
           allowed.update(f'publications/{record[0]}/index.html' for record in records)
           actual = {str(path.relative_to(site)) for path in site.rglob('*.html')}
           assert actual == allowed, {'unexpected': sorted(actual - allowed), 'missing': sorted(allowed - actual)}
           for path in site.rglob('*.html'):
-              html = path.read_text()
-              for target in re.findall(r'(?:href|src)="([^"]+)"', html):
+              page = Page(path.read_text())
+              for target in page.links:
                   if target.startswith(base + '/'):
                       candidate = site / target[len(base) + 1:].split('#')[0].split('?')[0]
                       assert candidate.exists() or candidate.with_name(candidate.name + '.html').exists() or (candidate / 'index.html').exists(), (str(path), target)
